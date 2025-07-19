@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const authSchema = z.object({
   email: z.string().email('유효한 이메일을 입력해주세요'),
@@ -27,7 +27,11 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+
+  // 원래 요청했던 페이지 URL 가져오기
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard'
 
   const {
     register,
@@ -72,7 +76,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           setError(error.message)
         } else {
           console.log('Login successful:', authData)
-          router.push('/dashboard')
+          router.push(redirectTo)
         }
       }
     } catch (err) {

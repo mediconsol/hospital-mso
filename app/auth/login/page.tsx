@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { AuthForm } from '@/components/auth/auth-form'
 
 export default function LoginPage() {
@@ -12,7 +13,9 @@ export default function LoginPage() {
             로그인하여 업무를 시작하세요
           </p>
         </div>
-        <AuthForm mode="login" />
+        <Suspense fallback={<div>로딩 중...</div>}>
+          <AuthForm mode="login" />
+        </Suspense>
       </div>
     </div>
   )

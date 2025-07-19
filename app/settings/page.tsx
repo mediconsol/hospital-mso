@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    redirect('/auth/login')
+    redirect('/auth/login?redirectTo=/settings')
   }
 
   return (
