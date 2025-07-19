@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { getUserPermissions, applyEmployeeFilter, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,11 +34,28 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
   const [showInviteForm, setShowInviteForm] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
   const [loading, setLoading] = useState(true)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const supabase = createClient()
 
   useEffect(() => {
-    fetchOrganizations()
+    initializeData()
   }, [])
+
+  const initializeData = async () => {
+    try {
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
+      await fetchOrganizations(permissions)
+    } catch (error) {
+      console.error('Error initializing employee manager:', error)
+    }
+  }
 
   useEffect(() => {
     if (selectedOrg) {
@@ -46,12 +64,19 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
     }
   }, [selectedOrg])
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = async (permissions?: UserPermissions) => {
     try {
-      const { data, error } = await supabase
+      const currentPermissions = permissions || userPermissions
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!currentPermissions.isAdmin && currentPermissions.hospitalId) {
+        query = query.eq('id', currentPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
@@ -257,16 +282,18 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
                     총 {filteredEmployees.length}명의 직원
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => setShowInviteForm(true)}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    직원 초대
-                  </Button>
-                  <Button onClick={() => setShowForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    직원 등록
-                  </Button>
-                </div>
+                {userPermissions.isManager && (
+                  <div className="flex gap-2">
+                    <Button onClick={() => setShowInviteForm(true)}>
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      직원 초대
+                    </Button>
+                    <Button onClick={() => setShowForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      직원 등록
+                    </Button>
+                  </div>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -322,6 +349,7 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
                 getRoleLabel={getRoleLabel}
                 getStatusColor={getStatusColor}
                 getStatusLabel={getStatusLabel}
+                isManager={userPermissions.isManager}
               />
             </CardContent>
           </Card>

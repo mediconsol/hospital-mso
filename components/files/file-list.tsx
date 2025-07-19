@@ -46,6 +46,7 @@ interface FileListProps {
   viewMode: 'grid' | 'list'
   onDownload: (file: FileRecord) => void
   onDelete: (fileId: string) => void
+  isManager?: boolean
 }
 
 export function FileList({ 
@@ -55,7 +56,8 @@ export function FileList({
   tasks, 
   viewMode, 
   onDownload, 
-  onDelete 
+  onDelete,
+  isManager = false 
 }: FileListProps) {
   
   const getInitials = (name: string) => {
@@ -334,13 +336,15 @@ export function FileList({
                             <ExternalLink className="h-4 w-4 mr-2" />
                             새 창에서 열기
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => onDelete(file.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            삭제
-                          </DropdownMenuItem>
+                          {isManager && (
+                            <DropdownMenuItem 
+                              onClick={() => onDelete(file.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              삭제
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>

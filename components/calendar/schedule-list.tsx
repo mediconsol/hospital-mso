@@ -35,6 +35,7 @@ interface ScheduleListProps {
   departments: Department[]
   onEdit: (schedule: Schedule) => void
   onDelete: (scheduleId: string) => void
+  isManager?: boolean
 }
 
 export function ScheduleList({ 
@@ -42,7 +43,8 @@ export function ScheduleList({
   employees, 
   departments, 
   onEdit, 
-  onDelete 
+  onDelete,
+  isManager = false 
 }: ScheduleListProps) {
   
   const getInitials = (name: string) => {
@@ -190,26 +192,28 @@ export function ScheduleList({
                     {getStatusBadge(schedule)}
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(schedule)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          수정
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onDelete(schedule.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          삭제
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {isManager && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(schedule)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            수정
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(schedule.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            삭제
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -237,26 +241,28 @@ export function ScheduleList({
                   </div>
                 )}
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(schedule)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    수정
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => onDelete(schedule.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    삭제
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isManager && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(schedule)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      수정
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete(schedule.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
             <div className="space-y-2">

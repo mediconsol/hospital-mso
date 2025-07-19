@@ -1,5 +1,8 @@
 'use client'
 
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
+import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,6 +22,25 @@ import {
 } from 'lucide-react'
 
 export function DashboardWidgets() {
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
+
+  useEffect(() => {
+    async function initializeUser() {
+      try {
+        const permissions = await getUserPermissions()
+        setUserPermissions(permissions)
+      } catch (error) {
+        console.error('Error getting user permissions:', error)
+      }
+    }
+    initializeUser()
+  }, [])
   const stats = [
     {
       title: '전체 직원',

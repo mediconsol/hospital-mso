@@ -27,6 +27,7 @@ interface EmployeeListProps {
   getRoleLabel: (role: string) => string
   getStatusColor: (status: string) => string
   getStatusLabel: (status: string) => string
+  isManager?: boolean
 }
 
 export function EmployeeList({ 
@@ -38,7 +39,8 @@ export function EmployeeList({
   getRoleColor,
   getRoleLabel,
   getStatusColor,
-  getStatusLabel
+  getStatusLabel,
+  isManager = false
 }: EmployeeListProps) {
   
   const getDepartmentName = (departmentId: string | null) => {
@@ -134,33 +136,35 @@ export function EmployeeList({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(employee)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          수정
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onStatusChange(employee.id, 
-                            employee.status === 'active' ? 'inactive' : 'active')}
-                        >
-                          <User className="h-4 w-4 mr-2" />
-                          {employee.status === 'active' ? '비활성화' : '활성화'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => onDelete(employee.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          삭제
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {isManager && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => onEdit(employee)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            수정
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onStatusChange(employee.id, 
+                              employee.status === 'active' ? 'inactive' : 'active')}
+                          >
+                            <User className="h-4 w-4 mr-2" />
+                            {employee.status === 'active' ? '비활성화' : '활성화'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => onDelete(employee.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            삭제
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -189,33 +193,35 @@ export function EmployeeList({
                   )}
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => onEdit(employee)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    수정
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => onStatusChange(employee.id, 
-                      employee.status === 'active' ? 'inactive' : 'active')}
-                  >
-                    <User className="h-4 w-4 mr-2" />
-                    {employee.status === 'active' ? '비활성화' : '활성화'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => onDelete(employee.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    삭제
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {isManager && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => onEdit(employee)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      수정
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onStatusChange(employee.id, 
+                        employee.status === 'active' ? 'inactive' : 'active')}
+                    >
+                      <User className="h-4 w-4 mr-2" />
+                      {employee.status === 'active' ? '비활성화' : '활성화'}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => onDelete(employee.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      삭제
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
             
             <div className="space-y-2">

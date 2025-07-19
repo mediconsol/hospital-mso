@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { getUserPermissions, applyNotificationFilter, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,7 +25,13 @@ interface NotificationManagerProps {
 
 export function NotificationManager({ userId }: NotificationManagerProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
-  const [employee, setEmployee] = useState<Employee | null>(null)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const [organization, setOrganization] = useState<HospitalOrMSO | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('')
@@ -34,11 +41,11 @@ export function NotificationManager({ userId }: NotificationManagerProps) {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchEmployee()
+    initializeUser()
   }, [userId])
 
   useEffect(() => {
-    if (employee) {
+    if (userPermissions.employee) {
       fetchOrganization()
       fetchNotifications()
       
@@ -64,33 +71,27 @@ export function NotificationManager({ userId }: NotificationManagerProps) {
         supabase.removeChannel(channel)
       }
     }
-  }, [employee, userId])
+  }, [userPermissions.employee, userId])
 
-  const fetchEmployee = async () => {
+  const initializeUser = async () => {
     try {
-      const { data, error } = await supabase
-        .from('employee')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (error) throw error
-      setEmployee(data)
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
     } catch (error) {
-      console.error('Error fetching employee:', error)
+      console.error('Error initializing user:', error)
     } finally {
       setLoading(false)
     }
   }
 
   const fetchOrganization = async () => {
-    if (!employee) return
+    if (!userPermissions.employee) return
 
     try {
       const { data, error } = await supabase
         .from('hospital_or_mso')
         .select('*')
-        .eq('id', employee.hospital_id)
+        .eq('id', userPermissions.employee.hospital_id)
         .single()
 
       if (error) throw error

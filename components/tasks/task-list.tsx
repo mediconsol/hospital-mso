@@ -43,6 +43,7 @@ interface TaskListProps {
   getPriorityLabel: (priority: string) => string
   getStatusColor: (status: string) => string
   getStatusLabel: (status: string) => string
+  isManager?: boolean
 }
 
 export function TaskList({ 
@@ -55,7 +56,8 @@ export function TaskList({
   getPriorityColor,
   getPriorityLabel,
   getStatusColor,
-  getStatusLabel
+  getStatusLabel,
+  isManager = false
 }: TaskListProps) {
   
   const getInitials = (name: string) => {
@@ -205,44 +207,46 @@ export function TaskList({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(task)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            수정
-                          </DropdownMenuItem>
-                          {task.status === 'pending' && (
-                            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
-                              <Play className="h-4 w-4 mr-2" />
-                              시작
+                      {isManager && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => onEdit(task)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              수정
                             </DropdownMenuItem>
-                          )}
-                          {task.status === 'in_progress' && (
-                            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                              완료
+                            {task.status === 'pending' && (
+                              <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
+                                <Play className="h-4 w-4 mr-2" />
+                                시작
+                              </DropdownMenuItem>
+                            )}
+                            {task.status === 'in_progress' && (
+                              <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                완료
+                              </DropdownMenuItem>
+                            )}
+                            {task.status !== 'completed' && (
+                              <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
+                                <XCircle className="h-4 w-4 mr-2" />
+                                취소
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem 
+                              onClick={() => onDelete(task.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              삭제
                             </DropdownMenuItem>
-                          )}
-                          {task.status !== 'completed' && (
-                            <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
-                              <XCircle className="h-4 w-4 mr-2" />
-                              취소
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem 
-                            onClick={() => onDelete(task.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            삭제
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </td>
                   </tr>
                 )
@@ -271,44 +275,46 @@ export function TaskList({
                     </div>
                   )}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(task)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      수정
-                    </DropdownMenuItem>
-                    {task.status === 'pending' && (
-                      <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
-                        <Play className="h-4 w-4 mr-2" />
-                        시작
+                {isManager && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onEdit(task)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        수정
                       </DropdownMenuItem>
-                    )}
-                    {task.status === 'in_progress' && (
-                      <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        완료
+                      {task.status === 'pending' && (
+                        <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
+                          <Play className="h-4 w-4 mr-2" />
+                          시작
+                        </DropdownMenuItem>
+                      )}
+                      {task.status === 'in_progress' && (
+                        <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          완료
+                        </DropdownMenuItem>
+                      )}
+                      {task.status !== 'completed' && (
+                        <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
+                          <XCircle className="h-4 w-4 mr-2" />
+                          취소
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(task.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        삭제
                       </DropdownMenuItem>
-                    )}
-                    {task.status !== 'completed' && (
-                      <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
-                        <XCircle className="h-4 w-4 mr-2" />
-                        취소
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(task.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      삭제
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               
               <div className="space-y-2">

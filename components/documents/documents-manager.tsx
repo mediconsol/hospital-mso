@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -53,6 +54,13 @@ export function DocumentsManager({ userId }: DocumentsManagerProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('all')
@@ -63,8 +71,14 @@ export function DocumentsManager({ userId }: DocumentsManagerProps) {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchOrganizations()
+    initializeUser()
   }, [])
+
+  useEffect(() => {
+    if (userPermissions.employee) {
+      fetchOrganizations()
+    }
+  }, [userPermissions])
 
   useEffect(() => {
     if (selectedOrg) {
@@ -74,24 +88,43 @@ export function DocumentsManager({ userId }: DocumentsManagerProps) {
     }
   }, [selectedOrg])
 
+  const initializeUser = async () => {
+    try {
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
+      
+      if (permissions.employee) {
+        setSelectedOrg(permissions.employee.hospital_id)
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const fetchOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!userPermissions.isAdmin && userPermissions.hospitalId) {
+        query = query.eq('id', userPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
       
       // 첫 번째 조직 자동 선택
-      if (data && data.length > 0) {
+      if (data && data.length > 0 && !selectedOrg) {
         setSelectedOrg(data[0].id)
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -300,10 +333,12 @@ export function DocumentsManager({ userId }: DocumentsManagerProps) {
                   </CardDescription>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => setShowUpload(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    문서 업로드
-                  </Button>
+                  {userPermissions.isManager && (
+                    <Button onClick={() => setShowUpload(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      문서 업로드
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -389,6 +424,7 @@ export function DocumentsManager({ userId }: DocumentsManagerProps) {
                     onDownload={handleDownload}
                     onDelete={handleDelete}
                     viewMode={viewMode}
+                    isManager={userPermissions.isManager}
                   />
                 </TabsContent>
               </Tabs>

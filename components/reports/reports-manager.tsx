@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -25,30 +26,62 @@ export function ReportsManager({ userId }: ReportsManagerProps) {
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [dateRange, setDateRange] = useState<string>('month')
   const [loading, setLoading] = useState(true)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const supabase = createClient()
 
   useEffect(() => {
-    fetchOrganizations()
+    initializeUser()
   }, [])
+
+  useEffect(() => {
+    if (userPermissions.employee) {
+      fetchOrganizations()
+    }
+  }, [userPermissions])
+
+  const initializeUser = async () => {
+    try {
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
+      
+      if (permissions.employee) {
+        setSelectedOrg(permissions.employee.hospital_id)
+      }
+    } catch (error) {
+      console.error('Error initializing user:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const fetchOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!userPermissions.isAdmin && userPermissions.hospitalId) {
+        query = query.eq('id', userPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
       
       // 첫 번째 조직 자동 선택
-      if (data && data.length > 0) {
+      if (data && data.length > 0 && !selectedOrg) {
         setSelectedOrg(data[0].id)
       }
     } catch (error) {
       console.error('Error fetching organizations:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -121,27 +154,29 @@ export function ReportsManager({ userId }: ReportsManagerProps) {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">보고서 내보내기</label>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleExportReport('pdf')}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  PDF
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleExportReport('excel')}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Excel
-                </Button>
+            {userPermissions.isManager && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">보고서 내보내기</label>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleExportReport('pdf')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    PDF
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleExportReport('excel')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>

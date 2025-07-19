@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { getCurrentEmployee } from '@/lib/auth-helpers'
+import { getUserPermissions, applyHospitalFilter, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,8 +25,13 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
   const [selectedOrg, setSelectedOrg] = useState<HospitalOrMSO | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const supabase = createClient()
 
   useEffect(() => {
@@ -35,26 +40,30 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
 
   const initializeData = async () => {
     try {
-      // 현재 직원 정보 가져오기
-      const employee = await getCurrentEmployee()
-      if (employee) {
-        setCurrentEmployee(employee)
-        setIsAdmin(employee.role === 'admin')
-      }
+      // 사용자 권한 정보 가져오기
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
       
       // 조직 목록 가져오기
-      await fetchOrganizations()
+      await fetchOrganizations(permissions)
     } catch (error) {
       console.error('Error initializing data:', error)
     }
   }
 
-  const fetchOrganizations = async () => {
+  const fetchOrganizations = async (permissions?: UserPermissions) => {
     try {
-      const { data, error } = await supabase
+      const currentPermissions = permissions || userPermissions
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!currentPermissions.isAdmin && currentPermissions.hospitalId) {
+        query = query.eq('id', currentPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
@@ -139,7 +148,7 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
                 등록된 병원 및 의료경영지원회사를 관리하세요
               </CardDescription>
             </div>
-            {isAdmin && (
+            {userPermissions.isAdmin && (
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 새 조직 추가
@@ -152,7 +161,7 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
             <div className="text-center py-8">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">등록된 조직이 없습니다.</p>
-              {isAdmin ? (
+              {userPermissions.isAdmin ? (
                 <p className="text-sm text-gray-400 mt-2">
                   첫 번째 병원 또는 MSO를 등록해보세요.
                 </p>
@@ -198,7 +207,7 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
                         </p>
                       )}
                     </div>
-                    {isAdmin && (
+                    {userPermissions.isAdmin && (
                       <div className="flex gap-1">
                         <Button
                           variant="ghost"
@@ -248,7 +257,7 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
               hospitalId={selectedOrg.id}
               departments={departments}
               onDepartmentsChange={setDepartments}
-              isAdmin={isAdmin}
+              isAdmin={userPermissions.isAdmin}
             />
           </CardContent>
         </Card>

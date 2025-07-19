@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { getCurrentEmployee } from '@/lib/auth-helpers'
+import { getUserPermissions, applyFileFilter, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,7 +30,13 @@ export function FileManager() {
   const [departments, setDepartments] = useState<Department[]>([])
   const [tasks, setTasks] = useState<TaskOption[]>([])
   const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [selectedOwner, setSelectedOwner] = useState<string>('')
@@ -46,10 +52,10 @@ export function FileManager() {
   }, [])
   
   useEffect(() => {
-    if (currentEmployee) {
+    if (userPermissions.employee) {
       fetchOrganizations()
     }
-  }, [currentEmployee])
+  }, [userPermissions])
 
   useEffect(() => {
     if (selectedOrg) {
@@ -62,11 +68,11 @@ export function FileManager() {
 
   const initializeUser = async () => {
     try {
-      const employee = await getCurrentEmployee()
-      setCurrentEmployee(employee)
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
       
-      if (employee) {
-        setSelectedOrg(employee.hospital_id)
+      if (permissions.employee) {
+        setSelectedOrg(permissions.employee.hospital_id)
       }
     } catch (error) {
       console.error('Error initializing user:', error)
@@ -75,10 +81,16 @@ export function FileManager() {
 
   const fetchOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!userPermissions.isAdmin && userPermissions.hospitalId) {
+        query = query.eq('id', userPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
@@ -314,10 +326,12 @@ export function FileManager() {
                   >
                     <List className="h-4 w-4" />
                   </Button>
-                  <Button onClick={() => setShowUpload(true)}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    파일 업로드
-                  </Button>
+                  {userPermissions.isManager && (
+                    <Button onClick={() => setShowUpload(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      파일 업로드
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -405,6 +419,7 @@ export function FileManager() {
                 viewMode={viewMode}
                 onDownload={handleDownload}
                 onDelete={handleDelete}
+                isManager={userPermissions.isManager}
               />
             </CardContent>
           </Card>
@@ -412,13 +427,13 @@ export function FileManager() {
       )}
 
       {/* 파일 업로드 모달 */}
-      {showUpload && currentEmployee && (
+      {showUpload && userPermissions.employee && (
         <FileUpload
           hospitalId={selectedOrg}
           employees={employees}
           departments={departments}
           tasks={tasks}
-          currentUserId={currentEmployee.id}
+          currentUserId={userPermissions.employee.id}
           onClose={() => setShowUpload(false)}
           onUploaded={handleFileUploaded}
         />

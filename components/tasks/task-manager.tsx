@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { getCurrentEmployee } from '@/lib/auth-helpers'
+import { getUserPermissions, applyTaskFilter, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -30,7 +30,13 @@ export function TaskManager() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions>({
+    employee: null,
+    isAdmin: false,
+    isManager: false,
+    hospitalId: null,
+    departmentId: null
+  })
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [selectedStatus, setSelectedStatus] = useState<string>('')
@@ -48,10 +54,10 @@ export function TaskManager() {
   }, [])
   
   useEffect(() => {
-    if (currentEmployee) {
+    if (userPermissions.employee) {
       fetchOrganizations()
     }
-  }, [currentEmployee])
+  }, [userPermissions])
 
   useEffect(() => {
     if (selectedOrg) {
@@ -63,11 +69,11 @@ export function TaskManager() {
 
   const initializeUser = async () => {
     try {
-      const employee = await getCurrentEmployee()
-      setCurrentEmployee(employee)
+      const permissions = await getUserPermissions()
+      setUserPermissions(permissions)
       
-      if (employee) {
-        setSelectedOrg(employee.hospital_id)
+      if (permissions.employee) {
+        setSelectedOrg(permissions.employee.hospital_id)
       }
     } catch (error) {
       console.error('Error initializing user:', error)
@@ -76,10 +82,16 @@ export function TaskManager() {
 
   const fetchOrganizations = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('hospital_or_mso')
         .select('*')
-        .order('created_at', { ascending: false })
+      
+      // 관리자가 아니면 소속 조직만 조회
+      if (!userPermissions.isAdmin && userPermissions.hospitalId) {
+        query = query.eq('id', userPermissions.hospitalId)
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false })
 
       if (error) throw error
       setOrganizations(data || [])
@@ -337,10 +349,12 @@ export function TaskManager() {
                   >
                     <List className="h-4 w-4" />
                   </Button>
-                  <Button onClick={() => setShowForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    업무 생성
-                  </Button>
+                  {userPermissions.isManager && (
+                    <Button onClick={() => setShowForm(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      업무 생성
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -446,6 +460,7 @@ export function TaskManager() {
                   getPriorityLabel={getPriorityLabel}
                   getStatusColor={getStatusColor}
                   getStatusLabel={getStatusLabel}
+                  isManager={userPermissions.isManager}
                 />
               ) : (
                 <TaskList
@@ -459,6 +474,7 @@ export function TaskManager() {
                   getPriorityLabel={getPriorityLabel}
                   getStatusColor={getStatusColor}
                   getStatusLabel={getStatusLabel}
+                  isManager={userPermissions.isManager}
                 />
               )}
             </CardContent>
@@ -467,13 +483,13 @@ export function TaskManager() {
       )}
 
       {/* 업무 생성/수정 폼 */}
-      {showForm && currentEmployee && (
+      {showForm && userPermissions.employee && (
         <TaskForm
           task={editingTask}
           hospitalId={selectedOrg}
           employees={employees}
           departments={departments}
-          currentUserId={currentEmployee.id}
+          currentUserId={userPermissions.employee.id}
           onClose={() => {
             setShowForm(false)
             setEditingTask(null)

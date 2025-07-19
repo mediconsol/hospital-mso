@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createClient } from '@/lib/supabase'
-import { getCurrentEmployee } from '@/lib/auth-helpers'
+import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -30,6 +30,7 @@ interface AnnouncementModalProps {
 export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [userPermissions, setUserPermissions] = useState<UserPermissions | null>(null)
   const supabase = createClient()
 
   const {
@@ -52,13 +53,13 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
     setError(null)
 
     try {
-      const currentEmployee = await getCurrentEmployee()
-      if (!currentEmployee) {
+      const permissions = await getUserPermissions()
+      if (!permissions.employee) {
         throw new Error('직원 정보를 찾을 수 없습니다')
       }
 
       // 관리자 권한 확인
-      if (currentEmployee.role !== 'admin' && currentEmployee.role !== 'manager') {
+      if (!permissions.isManager) {
         throw new Error('공지사항 작성 권한이 없습니다. 관리자에게 문의하세요.')
       }
 
@@ -66,7 +67,7 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
       const { data: employees, error: employeesError } = await supabase
         .from('employee')
         .select('id')
-        .eq('hospital_id', currentEmployee.hospital_id)
+        .eq('hospital_id', permissions.employee.hospital_id)
         .eq('status', 'active')
 
       if (employeesError) throw employeesError
@@ -79,7 +80,7 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
       const notifications = employees.map(emp => ({
         type: data.type,
         user_id: emp.id,
-        hospital_id: currentEmployee.hospital_id,
+        hospital_id: permissions.employee.hospital_id,
         title: data.title,
         message: data.message,
         is_read: false,

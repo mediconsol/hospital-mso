@@ -34,6 +34,7 @@ interface DocumentsListProps {
   onDownload: (document: DocumentFile) => void
   onDelete: (documentId: string) => void
   viewMode: 'grid' | 'list'
+  isManager?: boolean
 }
 
 export function DocumentsList({ 
@@ -42,7 +43,8 @@ export function DocumentsList({
   getDocumentCategory, 
   onDownload, 
   onDelete,
-  viewMode 
+  viewMode,
+  isManager = false 
 }: DocumentsListProps) {
   
   const formatFileSize = (bytes: number) => {
@@ -137,13 +139,15 @@ export function DocumentsList({
                         <Share2 className="h-4 w-4 mr-2" />
                         공유
                       </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => onDelete(document.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        삭제
-                      </DropdownMenuItem>
+                      {isManager && (
+                        <DropdownMenuItem 
+                          onClick={() => onDelete(document.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          삭제
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -249,13 +253,15 @@ export function DocumentsList({
                       <Share2 className="h-4 w-4 mr-2" />
                       공유
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(document.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      삭제
-                    </DropdownMenuItem>
+                    {isManager && (
+                      <DropdownMenuItem 
+                        onClick={() => onDelete(document.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        삭제
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

@@ -43,6 +43,7 @@ interface TaskBoardProps {
   getPriorityLabel: (priority: string) => string
   getStatusColor: (status: string) => string
   getStatusLabel: (status: string) => string
+  isManager?: boolean
 }
 
 export function TaskBoard({ 
@@ -55,7 +56,8 @@ export function TaskBoard({
   getPriorityColor,
   getPriorityLabel,
   getStatusColor,
-  getStatusLabel
+  getStatusLabel,
+  isManager = false
 }: TaskBoardProps) {
   
   const columns = [
@@ -115,44 +117,46 @@ export function TaskBoard({
                 </CardDescription>
               )}
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                  <MoreVertical className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(task)}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  수정
-                </DropdownMenuItem>
-                {task.status === 'pending' && (
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
-                    <Play className="h-4 w-4 mr-2" />
-                    시작
+            {isManager && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(task)}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    수정
                   </DropdownMenuItem>
-                )}
-                {task.status === 'in_progress' && (
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    완료
+                  {task.status === 'pending' && (
+                    <DropdownMenuItem onClick={() => onStatusChange(task.id, 'in_progress')}>
+                      <Play className="h-4 w-4 mr-2" />
+                      시작
+                    </DropdownMenuItem>
+                  )}
+                  {task.status === 'in_progress' && (
+                    <DropdownMenuItem onClick={() => onStatusChange(task.id, 'completed')}>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      완료
+                    </DropdownMenuItem>
+                  )}
+                  {task.status !== 'completed' && (
+                    <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      취소
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem 
+                    onClick={() => onDelete(task.id)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    삭제
                   </DropdownMenuItem>
-                )}
-                {task.status !== 'completed' && (
-                  <DropdownMenuItem onClick={() => onStatusChange(task.id, 'cancelled')}>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    취소
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem 
-                  onClick={() => onDelete(task.id)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  삭제
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pt-0">
