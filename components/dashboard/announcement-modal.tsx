@@ -80,7 +80,7 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
       const notifications = employees.map(emp => ({
         type: data.type,
         user_id: emp.id,
-        hospital_id: permissions.employee.hospital_id,
+        hospital_id: permissions.employee!.hospital_id,
         title: data.title,
         message: data.message,
         is_read: false,
