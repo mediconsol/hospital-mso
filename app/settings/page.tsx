@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import { IntranetLayout } from '@/components/layout/intranet-layout'
@@ -18,7 +19,9 @@ export default async function SettingsPage() {
         <div className="flex items-center justify-between space-y-2">
           <h2 className="text-3xl font-bold tracking-tight">설정</h2>
         </div>
-        <SettingsManager userId={user.id} />
+        <Suspense fallback={<div>설정을 불러오는 중...</div>}>
+          <SettingsManager userId={user.id} />
+        </Suspense>
       </div>
     </IntranetLayout>
   )

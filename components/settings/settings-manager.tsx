@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,6 +26,7 @@ interface SettingsManagerProps {
 }
 
 export function SettingsManager({ userId }: SettingsManagerProps) {
+  const searchParams = useSearchParams()
   const [userPermissions, setUserPermissions] = useState<UserPermissions>({
     employee: null,
     isAdmin: false,
@@ -34,6 +36,9 @@ export function SettingsManager({ userId }: SettingsManagerProps) {
   })
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
+
+  // URL 파라미터에서 탭 정보 가져오기
+  const defaultTab = searchParams.get('tab') || 'profile'
 
   useEffect(() => {
     initializeUser()
@@ -80,7 +85,7 @@ export function SettingsManager({ userId }: SettingsManagerProps) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="profile" className="space-y-4">
+          <Tabs defaultValue={defaultTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <User className="h-4 w-4" />

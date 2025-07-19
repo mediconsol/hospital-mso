@@ -17,11 +17,21 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Sidebar } from './sidebar'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { NotificationProvider } from '@/components/notifications/notification-provider'
+import { useRouter } from 'next/navigation'
 
 export function Header() {
   const { user, signOut } = useAuth()
+  const router = useRouter()
 
   if (!user) return null
+
+  const handleProfileClick = () => {
+    router.push('/settings?tab=profile')
+  }
+
+  const handleSettingsClick = () => {
+    router.push('/settings?tab=security')
+  }
 
   return (
     <NotificationProvider userId={user.id}>
@@ -99,11 +109,11 @@ export function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfileClick}>
                 <User className="mr-2 h-4 w-4" />
                 <span>프로필</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSettingsClick}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>설정</span>
               </DropdownMenuItem>
