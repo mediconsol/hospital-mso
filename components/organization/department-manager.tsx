@@ -28,9 +28,10 @@ interface DepartmentManagerProps {
   hospitalId: string
   departments: Department[]
   onDepartmentsChange: (departments: Department[]) => void
+  isAdmin?: boolean
 }
 
-export function DepartmentManager({ hospitalId, departments, onDepartmentsChange }: DepartmentManagerProps) {
+export function DepartmentManager({ hospitalId, departments, onDepartmentsChange, isAdmin = false }: DepartmentManagerProps) {
   const [showForm, setShowForm] = useState(false)
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -152,22 +153,24 @@ export function DepartmentManager({ hospitalId, departments, onDepartmentsChange
                 )}
               </div>
             </div>
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEdit(dept)}
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDelete(dept.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+            {isAdmin && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEdit(dept)}
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(dept.id)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
           {buildDepartmentTree(departments, dept.id, level + 1)}
         </div>
@@ -181,10 +184,12 @@ export function DepartmentManager({ hospitalId, departments, onDepartmentsChange
         <p className="text-sm text-gray-600">
           총 {departments.length}개 부서
         </p>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          부서 추가
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            부서 추가
+          </Button>
+        )}
       </div>
 
       {/* 부서 트리 */}
@@ -192,9 +197,15 @@ export function DepartmentManager({ hospitalId, departments, onDepartmentsChange
         <div className="text-center py-8">
           <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500">등록된 부서가 없습니다.</p>
-          <p className="text-sm text-gray-400 mt-2">
-            첫 번째 부서를 추가해보세요.
-          </p>
+          {isAdmin ? (
+            <p className="text-sm text-gray-400 mt-2">
+              첫 번째 부서를 추가해보세요.
+            </p>
+          ) : (
+            <p className="text-sm text-gray-400 mt-2">
+              관리자가 부서를 등록할 때까지 기다려주세요.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-2">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { getCurrentEmployee } from '@/lib/auth-helpers'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +13,7 @@ import { Database } from '@/lib/database.types'
 
 type HospitalOrMSO = Database['public']['Tables']['hospital_or_mso']['Row']
 type Department = Database['public']['Tables']['department']['Row']
+type Employee = Database['public']['Tables']['employee']['Row']
 
 interface OrganizationManagerProps {
   userId: string
@@ -23,11 +25,29 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
   const [selectedOrg, setSelectedOrg] = useState<HospitalOrMSO | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
-    fetchOrganizations()
+    initializeData()
   }, [])
+
+  const initializeData = async () => {
+    try {
+      // 현재 직원 정보 가져오기
+      const employee = await getCurrentEmployee()
+      if (employee) {
+        setCurrentEmployee(employee)
+        setIsAdmin(employee.role === 'admin')
+      }
+      
+      // 조직 목록 가져오기
+      await fetchOrganizations()
+    } catch (error) {
+      console.error('Error initializing data:', error)
+    }
+  }
 
   const fetchOrganizations = async () => {
     try {
@@ -119,10 +139,12 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
                 등록된 병원 및 의료경영지원회사를 관리하세요
               </CardDescription>
             </div>
-            <Button onClick={() => setShowForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              새 조직 추가
-            </Button>
+            {isAdmin && (
+              <Button onClick={() => setShowForm(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                새 조직 추가
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -130,9 +152,15 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
             <div className="text-center py-8">
               <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <p className="text-gray-500">등록된 조직이 없습니다.</p>
-              <p className="text-sm text-gray-400 mt-2">
-                첫 번째 병원 또는 MSO를 등록해보세요.
-              </p>
+              {isAdmin ? (
+                <p className="text-sm text-gray-400 mt-2">
+                  첫 번째 병원 또는 MSO를 등록해보세요.
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400 mt-2">
+                  관리자가 조직을 등록할 때까지 기다려주세요.
+                </p>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -170,29 +198,31 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedOrg(org)
-                          setShowForm(true)
-                        }}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteOrganization(org.id)
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedOrg(org)
+                            setShowForm(true)
+                          }}
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteOrganization(org.id)
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -218,6 +248,7 @@ export function OrganizationManager({ userId }: OrganizationManagerProps) {
               hospitalId={selectedOrg.id}
               departments={departments}
               onDepartmentsChange={setDepartments}
+              isAdmin={isAdmin}
             />
           </CardContent>
         </Card>
