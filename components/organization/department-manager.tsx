@@ -111,6 +111,8 @@ export function DepartmentManager({ hospitalId, departments, onDepartmentsChange
       parent_id: department.parent_id || undefined,
       description: department.description || undefined,
     })
+    // parent_id가 없으면 'none'으로 설정
+    setValue('parent_id', department.parent_id || undefined)
     setShowForm(true)
   }
 
@@ -244,15 +246,15 @@ export function DepartmentManager({ hospitalId, departments, onDepartmentsChange
               <div className="space-y-2">
                 <Label htmlFor="parent_id">상위 부서</Label>
                 <Select
-                  value={watchedParentId || ''}
-                  onValueChange={(value) => setValue('parent_id', value || undefined)}
+                  value={watchedParentId || 'none'}
+                  onValueChange={(value) => setValue('parent_id', value === 'none' ? undefined : value)}
                   disabled={isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="상위 부서를 선택하세요 (선택사항)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">최상위 부서</SelectItem>
+                    <SelectItem value="none">최상위 부서</SelectItem>
                     {departments
                       .filter(dept => dept.id !== editingDepartment?.id)
                       .map(dept => (
