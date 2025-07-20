@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
+import { BottomNavigation } from '@/components/mobile/bottom-navigation'
 import { useAuth } from '@/components/auth/auth-provider'
 
 interface IntranetLayoutProps {
@@ -47,9 +48,14 @@ export function IntranetLayout({ children }: IntranetLayoutProps) {
         <main className="flex-1 overflow-x-hidden overflow-y-auto">
           <div className="container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}
+            {/* 모바일 하단 네비게이션을 위한 여백 */}
+            <div className="h-20 md:hidden" />
           </div>
         </main>
       </div>
+
+      {/* 모바일 하단 네비게이션 */}
+      <BottomNavigation />
     </div>
   )
 }

@@ -57,3 +57,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* iOS Safe Area 지원 */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 모바일 하단 네비게이션 스타일 */
+.mobile-bottom-nav {
+  height: calc(4rem + env(safe-area-inset-bottom));
+}

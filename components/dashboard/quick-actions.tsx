@@ -68,7 +68,8 @@ export function QuickActions() {
 
   return (
     <>
-      <Card className="mb-6">
+      {/* 데스크톱에서만 표시 (모바일에서는 하단 네비게이션 사용) */}
+      <Card className="mb-6 hidden md:block">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
