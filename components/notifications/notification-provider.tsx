@@ -57,9 +57,13 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
           }
           
           // 토스트 알림 표시
-          toast(newNotification.title, {
+          toast(`🔔 ${newNotification.title}`, {
             description: newNotification.message,
-            duration: 5000,
+            duration: 6000,
+            action: {
+              label: "확인",
+              onClick: () => markAsRead([newNotification.id])
+            }
           })
         }
       )

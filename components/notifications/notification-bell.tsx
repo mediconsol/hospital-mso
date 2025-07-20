@@ -64,9 +64,9 @@ export function NotificationBell({ userId }: NotificationBellProps) {
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
+          <Bell className={`h-4 w-4 ${unreadCount > 0 ? 'text-red-500' : ''}`} />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs bg-red-500">
+            <Badge className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 text-xs bg-red-500 text-white border-2 border-white animate-pulse">
               {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}

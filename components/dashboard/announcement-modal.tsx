@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { X, Megaphone, Zap, AlertCircle, Bell, Users } from 'lucide-react'
+import { toast } from 'sonner'
 
 const announcementSchema = z.object({
   title: z.string().min(1, '제목은 필수입니다'),
@@ -63,20 +64,21 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
         throw new Error('공지사항 작성 권한이 없습니다. 관리자에게 문의하세요.')
       }
 
-      // 같은 병원의 모든 직원 조회
+      // 같은 병원의 모든 직원 조회 (작성자 본인 제외)
       const { data: employees, error: employeesError } = await supabase
         .from('employee')
         .select('id')
         .eq('hospital_id', permissions.employee.hospital_id)
         .eq('status', 'active')
+        .neq('id', permissions.employee.id) // 작성자 본인 제외
 
       if (employeesError) throw employeesError
 
       if (!employees || employees.length === 0) {
-        throw new Error('알림을 보낼 직원이 없습니다')
+        throw new Error('알림을 받을 직원이 없습니다')
       }
 
-      // 모든 직원에게 알림 생성
+      // 모든 직원에게 알림 생성 (작성자 제외)
       const notifications = employees.map(emp => ({
         type: data.type,
         user_id: emp.id,
@@ -91,6 +93,12 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
         .insert(notifications)
 
       if (notificationError) throw notificationError
+
+      // 성공 메시지 표시
+      toast.success(`📢 공지사항이 발송되었습니다`, {
+        description: `${employees.length}명의 직원에게 알림이 전달되었습니다.`,
+        duration: 4000,
+      })
 
       onSaved()
     } catch (err: any) {
