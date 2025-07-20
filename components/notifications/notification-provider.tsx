@@ -27,6 +27,20 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
   const [notifications, setNotifications] = useState<Notification[]>([])
   const supabase = createClient()
 
+  // Supabase 연결 상태 테스트
+  React.useEffect(() => {
+    if (userId) {
+      console.log('NotificationProvider: Testing Supabase connection...')
+      supabase.auth.getSession().then(({ data, error }) => {
+        if (error) {
+          console.error('NotificationProvider: Auth session error:', error)
+        } else {
+          console.log('NotificationProvider: Auth session:', data.session?.user?.id ? 'authenticated' : 'not authenticated')
+        }
+      })
+    }
+  }, [userId])
+
   // userId가 변경되면 즉시 알림 목록 클리어
   React.useEffect(() => {
     if (!userId) {
@@ -37,15 +51,20 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
   useEffect(() => {
     // userId가 없으면 구독하지 않음
     if (!userId) {
+      console.log('NotificationProvider: No userId, skipping subscription')
       setNotifications([])
       return
     }
 
+    console.log('NotificationProvider: Setting up real-time subscription for userId:', userId)
     fetchNotifications()
     
     // 실시간 알림 구독
+    const channelName = `user_notifications_${userId}`
+    console.log('NotificationProvider: Creating channel:', channelName)
+    
     const channel = supabase
-      .channel(`user_notifications_${userId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -56,21 +75,31 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
         },
         (payload) => {
           try {
+            console.log('NotificationProvider: Received new notification via real-time:', payload)
             const newNotification = payload.new as Notification
-            setNotifications(prev => [newNotification, ...prev])
+            console.log('NotificationProvider: New notification details:', newNotification)
+            
+            setNotifications(prev => {
+              console.log('NotificationProvider: Adding notification to list, current count:', prev.length)
+              return [newNotification, ...prev]
+            })
             
             // 브라우저 알림 표시
             if (typeof window !== 'undefined' && 'Notification' in window) {
               if (Notification.permission === 'granted') {
+                console.log('NotificationProvider: Showing browser notification')
                 new Notification(newNotification.title, {
                   body: newNotification.message,
                   icon: '/favicon.ico',
                   tag: newNotification.id,
                 })
+              } else {
+                console.log('NotificationProvider: Browser notification permission not granted:', Notification.permission)
               }
             }
             
             // 토스트 알림 표시
+            console.log('NotificationProvider: Showing toast notification')
             toast(`🔔 ${newNotification.title}`, {
               description: newNotification.message,
               duration: 6000,
@@ -80,7 +109,7 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
               }
             })
           } catch (error) {
-            console.error('Error handling new notification:', error)
+            console.error('NotificationProvider: Error handling new notification:', error)
           }
         }
       )
@@ -120,12 +149,24 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
           }
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log('NotificationProvider: Subscription status:', status)
+        if (status === 'SUBSCRIBED') {
+          console.log('NotificationProvider: Successfully subscribed to real-time notifications')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('NotificationProvider: Error subscribing to real-time notifications')
+        }
+      })
 
     // 브라우저 알림 권한 요청
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
-        Notification.requestPermission()
+        console.log('NotificationProvider: Requesting browser notification permission')
+        Notification.requestPermission().then(permission => {
+          console.log('NotificationProvider: Browser notification permission result:', permission)
+        })
+      } else {
+        console.log('NotificationProvider: Browser notification permission status:', Notification.permission)
       }
     }
 
@@ -141,11 +182,13 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
   const fetchNotifications = async () => {
     // userId가 없으면 fetch하지 않음
     if (!userId) {
+      console.log('NotificationProvider: No userId, clearing notifications')
       setNotifications([])
       return
     }
 
     try {
+      console.log('NotificationProvider: Fetching notifications for userId:', userId)
       const { data, error } = await supabase
         .from('notification')
         .select('*')
@@ -153,6 +196,11 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
         .order('created_at', { ascending: false })
 
       if (error) throw error
+      
+      console.log('NotificationProvider: Fetched notifications:', data?.length || 0, 'total')
+      const unreadCount = data?.filter(n => !n.is_read).length || 0
+      console.log('NotificationProvider: Unread notifications:', unreadCount)
+      
       setNotifications(data || [])
     } catch (error) {
       console.error('Error fetching notifications:', error)

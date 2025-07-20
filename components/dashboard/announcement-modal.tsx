@@ -65,14 +65,20 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
       }
 
       // 같은 병원의 모든 직원 조회 (작성자 본인 제외)
+      console.log('AnnouncementModal: Fetching employees for hospital_id:', permissions.employee.hospital_id)
+      console.log('AnnouncementModal: Excluding author with id:', permissions.employee.id)
+      
       const { data: employees, error: employeesError } = await supabase
         .from('employee')
-        .select('id')
+        .select('id, name, email')
         .eq('hospital_id', permissions.employee.hospital_id)
         .eq('status', 'active')
         .neq('id', permissions.employee.id) // 작성자 본인 제외
 
       if (employeesError) throw employeesError
+
+      console.log('AnnouncementModal: Found employees to notify:', employees?.length || 0)
+      console.log('AnnouncementModal: Employee details:', employees)
 
       if (!employees || employees.length === 0) {
         throw new Error('알림을 받을 직원이 없습니다')
@@ -88,11 +94,18 @@ export function AnnouncementModal({ onClose, onSaved }: AnnouncementModalProps) 
         is_read: false,
       }))
 
+      console.log('AnnouncementModal: Creating notifications:', notifications)
+
       const { error: notificationError } = await supabase
         .from('notification')
         .insert(notifications)
 
-      if (notificationError) throw notificationError
+      if (notificationError) {
+        console.error('AnnouncementModal: Error inserting notifications:', notificationError)
+        throw notificationError
+      }
+
+      console.log('AnnouncementModal: Successfully inserted notifications for', employees.length, 'employees')
 
       // 성공 메시지 표시
       toast.success(`📢 공지사항이 발송되었습니다`, {

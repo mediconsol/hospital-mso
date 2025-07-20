@@ -18,13 +18,39 @@ import { Sidebar } from './sidebar'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { NotificationProvider } from '@/components/notifications/notification-provider'
 import { useRouter } from 'next/navigation'
+import { getUserPermissions } from '@/lib/permission-helpers'
+import { useEffect, useState } from 'react'
 
 export function Header() {
   const { user, signOut, loading } = useAuth()
   const router = useRouter()
+  const [employeeId, setEmployeeId] = useState<string | null>(null)
+
+  // Employee ID 가져오기
+  useEffect(() => {
+    if (user) {
+      getUserPermissions().then(permissions => {
+        if (permissions.employee) {
+          console.log('Header: Found employee.id:', permissions.employee.id)
+          setEmployeeId(permissions.employee.id)
+        } else {
+          console.log('Header: No employee found for user')
+        }
+      }).catch(error => {
+        console.error('Header: Error getting employee permissions:', error)
+      })
+    }
+  }, [user])
 
   // 로딩 중이거나 사용자가 없으면 렌더링하지 않음
   if (loading || !user) return null
+
+  // employeeId가 없으면 아직 로딩 중
+  if (!employeeId) return null
+
+  // 디버깅용 로그 (필요시 주석 해제)
+  // console.log('Header: user.id (auth):', user.id)
+  // console.log('Header: employee.id:', employeeId)
 
   const handleProfileClick = () => {
     router.push('/settings?tab=profile')
@@ -39,7 +65,7 @@ export function Header() {
   }
 
   return (
-    <NotificationProvider userId={user.id}>
+    <NotificationProvider userId={employeeId}>
       <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container flex h-16 items-center justify-between px-4">
         {/* 모바일 메뉴 */}
@@ -88,7 +114,7 @@ export function Header() {
           </div>
 
           {/* 알림 */}
-          <NotificationBell userId={user.id} />
+          <NotificationBell userId={employeeId} />
 
           {/* 사용자 메뉴 */}
           <DropdownMenu>

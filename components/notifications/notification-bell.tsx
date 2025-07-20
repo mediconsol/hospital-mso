@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -24,6 +24,14 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   const recentNotifications = notifications.slice(0, 5)
+
+  // 디버깅용 로그
+  React.useEffect(() => {
+    console.log('NotificationBell: userId:', userId)
+    console.log('NotificationBell: notifications count:', notifications.length)
+    console.log('NotificationBell: unreadCount:', unreadCount)
+    console.log('NotificationBell: notifications:', notifications)
+  }, [userId, notifications, unreadCount])
 
   const handleNotificationClick = async (notificationId: string, isRead: boolean) => {
     if (!isRead) {
