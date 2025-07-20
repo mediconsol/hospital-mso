@@ -30,6 +30,7 @@ import {
   Settings
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CreateChatModal } from './create-chat-modal'
 
 // 메시지 관련 타입 정의
 interface ChatRoom {
@@ -148,12 +149,6 @@ export function RealMessagesManager() {
   const loadMessages = async (roomId: string) => {
     try {
       const roomMessages = await getChatMessages(roomId)
-      console.log('Loaded messages:', roomMessages)
-      console.log('Messages with sender info:', roomMessages.map(m => ({ 
-        id: m.id, 
-        content: m.content, 
-        sender: m.sender 
-      })))
       setMessages(roomMessages)
     } catch (error) {
       console.error('Error loading messages:', error)
@@ -495,27 +490,13 @@ export function RealMessagesManager() {
 
       {/* 새 채팅방 생성 모달 */}
       {showNewChatModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>새 대화 시작</CardTitle>
-              <CardDescription>
-                개인 또는 그룹 대화를 시작하세요
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">
-                  새 채팅방 생성 기능은 곧 구현될 예정입니다
-                </p>
-                <Button onClick={() => setShowNewChatModal(false)}>
-                  확인
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <CreateChatModal
+          onClose={() => setShowNewChatModal(false)}
+          onChatRoomCreated={() => {
+            setShowNewChatModal(false)
+            loadChatRooms() // 채팅방 목록 새로고침
+          }}
+        />
       )}
     </div>
   )
