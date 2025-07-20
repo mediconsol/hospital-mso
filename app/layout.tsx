@@ -62,17 +62,17 @@ export default function RootLayout({
         <link rel="shortcut icon" href="/icons/icon-192x192.svg" />
         
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:url" content="https://yourdomain.com" />
+        <meta name="twitter:url" content="https://hospital-mso.vercel.app" />
         <meta name="twitter:title" content="병원 인트라넷" />
         <meta name="twitter:description" content="병원 및 MSO를 위한 통합 관리 시스템" />
-        <meta name="twitter:image" content="/icons/icon-192x192.svg" />
-        <meta name="twitter:creator" content="@yourtwitterhandle" />
+        <meta name="twitter:image" content="https://hospital-mso.vercel.app/icons/icon-192x192.svg" />
+        <meta name="twitter:creator" content="@mediconsol" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="병원 인트라넷" />
         <meta property="og:description" content="병원 및 MSO를 위한 통합 관리 시스템" />
         <meta property="og:site_name" content="병원 인트라넷" />
-        <meta property="og:url" content="https://yourdomain.com" />
-        <meta property="og:image" content="/icons/icon-512x512.svg" />
+        <meta property="og:url" content="https://hospital-mso.vercel.app" />
+        <meta property="og:image" content="https://hospital-mso.vercel.app/icons/icon-512x512.svg" />
       </head>
       <body className={inter.className}>
         <PWAProvider>

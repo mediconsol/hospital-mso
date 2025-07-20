@@ -2,12 +2,12 @@
   "name": "병원 인트라넷 - MSO 통합 관리 시스템",
   "short_name": "병원인트라넷",
   "description": "병원 및 MSO를 위한 통합 관리 시스템",
-  "start_url": "/",
+  "start_url": "https://hospital-mso.vercel.app/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "orientation": "portrait-primary",
-  "scope": "/",
+  "scope": "https://hospital-mso.vercel.app/",
   "lang": "ko",
   "dir": "ltr",
   "categories": ["business", "medical", "productivity"],
@@ -66,21 +66,21 @@
       "name": "대시보드",
       "short_name": "대시보드",
       "description": "메인 대시보드로 이동",
-      "url": "/dashboard",
+      "url": "https://hospital-mso.vercel.app/dashboard",
       "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "공지사항",
       "short_name": "공지사항",
       "description": "공지사항 확인",
-      "url": "/announcements",
+      "url": "https://hospital-mso.vercel.app/announcements",
       "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     },
     {
       "name": "알림",
       "short_name": "알림",
       "description": "알림 확인",
-      "url": "/notifications",
+      "url": "https://hospital-mso.vercel.app/notifications",
       "icons": [{ "src": "/icons/icon-96x96.svg", "sizes": "96x96" }]
     }
   ],
