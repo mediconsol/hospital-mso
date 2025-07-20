@@ -86,16 +86,16 @@ export function InstallPrompt() {
   }, [])
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt && !isIOS) {
-      toast.error('설치가 지원되지 않는 브라우저입니다.')
-      return
-    }
-
     if (isIOS) {
       // iOS 설치 안내 표시
       toast.info('Safari에서 공유 버튼 → "홈 화면에 추가"를 선택해주세요', {
         duration: 8000
       })
+      return
+    }
+
+    if (!deferredPrompt) {
+      toast.error('설치가 지원되지 않는 브라우저입니다.')
       return
     }
 
