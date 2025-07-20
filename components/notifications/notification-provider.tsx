@@ -28,11 +28,17 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
   const supabase = createClient()
 
   useEffect(() => {
+    // userId가 없으면 구독하지 않음
+    if (!userId) {
+      setNotifications([])
+      return
+    }
+
     fetchNotifications()
     
     // 실시간 알림 구독
     const channel = supabase
-      .channel('user_notifications')
+      .channel(`user_notifications_${userId}`)
       .on(
         'postgres_changes',
         {
@@ -42,29 +48,33 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const newNotification = payload.new as Notification
-          setNotifications(prev => [newNotification, ...prev])
-          
-          // 브라우저 알림 표시
-          if (typeof window !== 'undefined' && 'Notification' in window) {
-            if (Notification.permission === 'granted') {
-              new Notification(newNotification.title, {
-                body: newNotification.message,
-                icon: '/favicon.ico',
-                tag: newNotification.id,
-              })
+          try {
+            const newNotification = payload.new as Notification
+            setNotifications(prev => [newNotification, ...prev])
+            
+            // 브라우저 알림 표시
+            if (typeof window !== 'undefined' && 'Notification' in window) {
+              if (Notification.permission === 'granted') {
+                new Notification(newNotification.title, {
+                  body: newNotification.message,
+                  icon: '/favicon.ico',
+                  tag: newNotification.id,
+                })
+              }
             }
+            
+            // 토스트 알림 표시
+            toast(`🔔 ${newNotification.title}`, {
+              description: newNotification.message,
+              duration: 6000,
+              action: {
+                label: "확인",
+                onClick: () => markAsRead([newNotification.id])
+              }
+            })
+          } catch (error) {
+            console.error('Error handling new notification:', error)
           }
-          
-          // 토스트 알림 표시
-          toast(`🔔 ${newNotification.title}`, {
-            description: newNotification.message,
-            duration: 6000,
-            action: {
-              label: "확인",
-              onClick: () => markAsRead([newNotification.id])
-            }
-          })
         }
       )
       .on(
@@ -76,10 +86,14 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const updatedNotification = payload.new as Notification
-          setNotifications(prev => 
-            prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-          )
+          try {
+            const updatedNotification = payload.new as Notification
+            setNotifications(prev => 
+              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            )
+          } catch (error) {
+            console.error('Error handling notification update:', error)
+          }
         }
       )
       .on(
@@ -91,8 +105,12 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
           filter: `user_id=eq.${userId}`,
         },
         (payload) => {
-          const deletedNotification = payload.old as Notification
-          setNotifications(prev => prev.filter(n => n.id !== deletedNotification.id))
+          try {
+            const deletedNotification = payload.old as Notification
+            setNotifications(prev => prev.filter(n => n.id !== deletedNotification.id))
+          } catch (error) {
+            console.error('Error handling notification deletion:', error)
+          }
         }
       )
       .subscribe()
@@ -105,11 +123,21 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
     }
 
     return () => {
-      supabase.removeChannel(channel)
+      try {
+        supabase.removeChannel(channel)
+      } catch (error) {
+        console.error('Error removing notification channel:', error)
+      }
     }
   }, [userId])
 
   const fetchNotifications = async () => {
+    // userId가 없으면 fetch하지 않음
+    if (!userId) {
+      setNotifications([])
+      return
+    }
+
     try {
       const { data, error } = await supabase
         .from('notification')
@@ -121,6 +149,7 @@ export function NotificationProvider({ userId, children }: NotificationProviderP
       setNotifications(data || [])
     } catch (error) {
       console.error('Error fetching notifications:', error)
+      setNotifications([])
     }
   }
 

@@ -33,6 +33,16 @@ export function Header() {
     router.push('/settings?tab=security')
   }
 
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error('Error during sign out:', error)
+      // 에러가 발생해도 로그인 페이지로 이동
+      router.push('/auth/login')
+    }
+  }
+
   return (
     <NotificationProvider userId={user.id}>
       <header className="sticky top-0 z-50 w-full border-b bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -118,7 +128,7 @@ export function Header() {
                 <span>설정</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut}>
+              <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>로그아웃</span>
               </DropdownMenuItem>
