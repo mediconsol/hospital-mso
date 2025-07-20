@@ -20,10 +20,11 @@ import { NotificationProvider } from '@/components/notifications/notification-pr
 import { useRouter } from 'next/navigation'
 
 export function Header() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, loading } = useAuth()
   const router = useRouter()
 
-  if (!user) return null
+  // 로딩 중이거나 사용자가 없으면 렌더링하지 않음
+  if (loading || !user) return null
 
   const handleProfileClick = () => {
     router.push('/settings?tab=profile')
@@ -34,13 +35,7 @@ export function Header() {
   }
 
   const handleSignOut = async () => {
-    try {
-      await signOut()
-    } catch (error) {
-      console.error('Error during sign out:', error)
-      // 에러가 발생해도 로그인 페이지로 이동
-      router.push('/auth/login')
-    }
+    await signOut()
   }
 
   return (

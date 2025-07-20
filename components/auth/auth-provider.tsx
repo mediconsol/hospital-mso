@@ -31,17 +31,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         try {
-          setUser(session?.user ?? null)
+          const newUser = session?.user ?? null
+          
+          // 상태 업데이트
+          setUser(newUser)
           setLoading(false)
           
-          if (event === 'SIGNED_IN') {
+          // SIGNED_IN 이벤트만 처리 (SIGNED_OUT은 signOut 함수에서 처리)
+          if (event === 'SIGNED_IN' && newUser) {
             router.push('/dashboard')
-          }
-          
-          if (event === 'SIGNED_OUT') {
-            // 로그아웃 시에는 signOut 함수에서 이미 리다이렉트를 처리하므로
-            // 여기서는 중복 리다이렉트를 방지
-            // router.push('/auth/login')
           }
         } catch (error) {
           console.error('Auth state change error:', error)
@@ -56,24 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true)
+      
+      // 즉시 로컬 상태 클리어 (UI 즉시 업데이트)
+      setUser(null)
+      
+      // Supabase 로그아웃 처리
       const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('Error signing out:', error)
-        throw error
       }
       
-      // 로컬 상태 즉시 클리어
-      setUser(null)
-      
-      // 로그인 페이지로 리다이렉트
-      router.push('/auth/login')
+      // 브라우저 히스토리 클리어하고 홈페이지로 이동
+      window.location.href = '/'
     } catch (error) {
       console.error('Sign out error:', error)
-      // 에러가 발생해도 로컬 상태는 클리어하고 로그인 페이지로 이동
+      // 에러가 발생해도 강제로 홈페이지로 이동
       setUser(null)
-      router.push('/auth/login')
-    } finally {
-      setLoading(false)
+      window.location.href = '/'
     }
   }
 

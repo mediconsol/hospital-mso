@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Database } from '@/lib/database.types'
@@ -26,6 +26,13 @@ interface NotificationProviderProps {
 export function NotificationProvider({ userId, children }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const supabase = createClient()
+
+  // userId가 변경되면 즉시 알림 목록 클리어
+  React.useEffect(() => {
+    if (!userId) {
+      setNotifications([])
+    }
+  }, [userId])
 
   useEffect(() => {
     // userId가 없으면 구독하지 않음

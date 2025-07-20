@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
 import { useAuth } from '@/components/auth/auth-provider'
-import { redirect } from 'next/navigation'
 
 interface IntranetLayoutProps {
   children: React.ReactNode
@@ -11,6 +12,13 @@ interface IntranetLayoutProps {
 
 export function IntranetLayout({ children }: IntranetLayoutProps) {
   const { user, loading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login')
+    }
+  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -21,7 +29,7 @@ export function IntranetLayout({ children }: IntranetLayoutProps) {
   }
 
   if (!user) {
-    redirect('/auth/login')
+    return null // 리다이렉트 중이므로 아무것도 렌더링하지 않음
   }
 
   return (
