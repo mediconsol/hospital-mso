@@ -148,6 +148,12 @@ export function RealMessagesManager() {
   const loadMessages = async (roomId: string) => {
     try {
       const roomMessages = await getChatMessages(roomId)
+      console.log('Loaded messages:', roomMessages)
+      console.log('Messages with sender info:', roomMessages.map(m => ({ 
+        id: m.id, 
+        content: m.content, 
+        sender: m.sender 
+      })))
       setMessages(roomMessages)
     } catch (error) {
       console.error('Error loading messages:', error)
@@ -406,10 +412,20 @@ export function RealMessagesManager() {
                           {showAvatar && !isOwn && (
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-sm font-medium">
-                                {message.sender?.name}
+                                {message.sender?.name || '알 수 없는 사용자'}
                               </span>
                               <span className="text-xs text-gray-500">
                                 {formatTime(message.created_at)}
+                              </span>
+                            </div>
+                          )}
+                          {showAvatar && isOwn && (
+                            <div className="flex items-center justify-end gap-2 mb-1">
+                              <span className="text-xs text-gray-500">
+                                {formatTime(message.created_at)}
+                              </span>
+                              <span className="text-sm font-medium">
+                                {message.sender?.name || currentEmployee?.name || '나'}
                               </span>
                             </div>
                           )}
@@ -424,7 +440,7 @@ export function RealMessagesManager() {
                             <p className="text-sm leading-relaxed">
                               {message.content}
                             </p>
-                            {isOwn && (
+                            {isOwn && !showAvatar && (
                               <span className="text-xs opacity-75 block mt-1">
                                 {formatTime(message.created_at)}
                               </span>
