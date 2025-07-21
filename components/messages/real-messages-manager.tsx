@@ -34,6 +34,7 @@ import {
   Settings
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CreateChatModal } from './create-chat-modal'
 
 // 메시지 관련 타입 정의
 interface ChatRoom {
@@ -444,7 +445,7 @@ export function RealMessagesManager() {
                             <p className="text-sm leading-relaxed">
                               {message.content}
                             </p>
-                            {isOwn && (
+                            {isOwn && !showAvatar && (
                               <span className="text-xs opacity-75 block mt-1">
                                 {formatTime(message.created_at)}
                               </span>
@@ -497,6 +498,7 @@ export function RealMessagesManager() {
         )}
       </Card>
 
+<<<<<<< HEAD
 
 
       {/* 채팅방 생성 모달 */}
