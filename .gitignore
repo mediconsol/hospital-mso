@@ -60,3 +60,7 @@ logs
 *.njsproj
 *.sln
 *.sw?
+
+# Large installer files
+DockerDesktopInstaller.exe
+*.exe
