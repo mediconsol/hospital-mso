@@ -63,6 +63,75 @@ export function AuthForm({ mode }: AuthFormProps) {
           setError(error.message)
         } else {
           console.log('Signup successful:', authData)
+
+          // 회원가입 성공 후 직원 정보 처리
+          if (authData.user) {
+            try {
+              // 1. 기존 직원 정보 확인 및 연결
+              const { data: existingEmployee, error: checkError } = await supabase
+                .from('employee')
+                .select('*')
+                .eq('email', data.email)
+                .single()
+
+              if (existingEmployee && !checkError) {
+                // 기존 직원 정보가 있으면 auth_user_id 연결
+                const { error: updateError } = await supabase
+                  .from('employee')
+                  .update({
+                    auth_user_id: authData.user.id,
+                    status: 'active'
+                  })
+                  .eq('email', data.email)
+
+                if (updateError) {
+                  console.error('Employee update error:', updateError)
+                } else {
+                  console.log('Existing employee record updated successfully')
+                }
+              } else {
+                // 2. 기존 직원 정보가 없으면 기본 병원으로 새 직원 생성
+                console.log('No existing employee record found, creating new one...')
+
+                // 기본 병원(MediConsol) 조회
+                const { data: defaultHospital, error: hospitalError } = await supabase
+                  .from('hospital_or_mso')
+                  .select('*')
+                  .or('name.eq.MediConsol 본사,name.eq.MediConsol(기본)')
+                  .limit(1)
+                  .single()
+
+                if (defaultHospital && !hospitalError) {
+                  // 새 직원 레코드 생성
+                  const { error: insertError } = await supabase
+                    .from('employee')
+                    .insert([{
+                      name: data.name,
+                      email: data.email,
+                      hospital_id: defaultHospital.id,
+                      role: 'employee',
+                      status: 'active',
+                      auth_user_id: authData.user.id,
+                      department_id: null,
+                      position: null,
+                      phone: null,
+                      hire_date: new Date().toISOString().split('T')[0]
+                    }])
+
+                  if (insertError) {
+                    console.error('New employee creation error:', insertError)
+                  } else {
+                    console.log('New employee record created successfully')
+                  }
+                } else {
+                  console.error('Default hospital not found:', hospitalError)
+                }
+              }
+            } catch (updateErr) {
+              console.error('Employee processing exception:', updateErr)
+            }
+          }
+
           router.push('/auth/verify-email')
         }
       } else {

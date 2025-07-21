@@ -1,3 +1,4 @@
+-- Migration: 20250720070002_storage_setup
 -- Create storage bucket for files
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('files', 'files', true);

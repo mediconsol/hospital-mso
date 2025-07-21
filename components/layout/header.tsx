@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Bell, Settings, LogOut, User, Menu } from 'lucide-react'
+import { Bell, Settings, LogOut, User, Menu, Shield } from 'lucide-react'
 import { useAuth } from '@/components/auth/auth-provider'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { Sidebar } from './sidebar'
@@ -25,14 +25,16 @@ export function Header() {
   const { user, signOut, loading } = useAuth()
   const router = useRouter()
   const [employeeId, setEmployeeId] = useState<string | null>(null)
+  const [permissions, setPermissions] = useState<any>(null)
 
-  // Employee ID 가져오기
+  // Employee ID 및 권한 정보 가져오기
   useEffect(() => {
     if (user) {
-      getUserPermissions().then(permissions => {
-        if (permissions.employee) {
-          console.log('Header: Found employee.id:', permissions.employee.id)
-          setEmployeeId(permissions.employee.id)
+      getUserPermissions().then(userPermissions => {
+        setPermissions(userPermissions)
+        if (userPermissions.employee) {
+          console.log('Header: Found employee.id:', userPermissions.employee.id)
+          setEmployeeId(userPermissions.employee.id)
         } else {
           console.log('Header: No employee found for user')
         }
@@ -148,6 +150,15 @@ export function Header() {
                 <Settings className="mr-2 h-4 w-4" />
                 <span>설정</span>
               </DropdownMenuItem>
+              {permissions && (permissions.isAdmin || permissions.isSuperAdmin) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>백오피스 관리</span>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />

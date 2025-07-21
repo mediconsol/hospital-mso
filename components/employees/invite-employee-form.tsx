@@ -20,7 +20,7 @@ const inviteSchema = z.object({
   email: z.string().email('유효한 이메일을 입력하세요'),
   name: z.string().min(1, '이름은 필수입니다'),
   department_id: z.string().optional(),
-  role: z.enum(['admin', 'manager', 'employee']).refine(val => val !== undefined, { message: '역할을 선택하세요' }),
+  role: z.enum(['super_admin', 'admin', 'manager', 'employee']).refine(val => val !== undefined, { message: '역할을 선택하세요' }),
   position: z.string().optional(),
   message: z.string().optional(),
 })
@@ -63,60 +63,32 @@ export function InviteEmployeeForm({ hospitalId, departments, onClose, onSent }:
     setSuccess(null)
 
     try {
-      // 1. 직원 정보를 데이터베이스에 미리 저장 (상태는 inactive로)
-      const employeeData = {
-        name: data.name,
-        email: data.email,
-        hospital_id: hospitalId,
-        department_id: data.department_id || null,
-        role: data.role,
-        position: data.position || null,
-        status: 'inactive' as const, // 초대 상태
-        phone: null,
-        hire_date: null,
+      // API 엔드포인트를 통해 직원 초대
+      const response = await fetch('/api/invite-employee', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          hospital_id: hospitalId,
+          department_id: data.department_id || null,
+          role: data.role,
+          position: data.position || null,
+          message: data.message,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || '초대 이메일 발송 중 오류가 발생했습니다.')
       }
 
-      const { error: insertError } = await supabase
-        .from('employee')
-        .insert([employeeData])
+      setSuccess(result.message || '초대 이메일이 성공적으로 발송되었습니다!')
 
-      if (insertError) {
-        // 이미 존재하는 이메일인 경우
-        if (insertError.code === '23505') {
-          throw new Error('이미 등록된 이메일입니다.')
-        }
-        throw insertError
-      }
-
-      // 2. 초대 이메일 발송을 위한 Supabase Auth 초대
-      const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(
-        data.email,
-        {
-          data: {
-            name: data.name,
-            hospital_id: hospitalId,
-            department_id: data.department_id || null,
-            role: data.role,
-            position: data.position || null,
-          },
-          redirectTo: `${window.location.origin}/auth/callback`,
-        }
-      )
-
-      if (inviteError) {
-        // 초대 실패 시 생성된 직원 정보 삭제
-        await supabase
-          .from('employee')
-          .delete()
-          .eq('email', data.email)
-          .eq('hospital_id', hospitalId)
-        
-        throw inviteError
-      }
-
-      setSuccess('초대 이메일이 성공적으로 발송되었습니다!')
-      
-      // 3초 후 폼 닫기
+      // 2초 후 폼 닫기
       setTimeout(() => {
         onSent()
       }, 2000)
@@ -206,13 +178,14 @@ export function InviteEmployeeForm({ hospitalId, departments, onClose, onSent }:
                 <Label htmlFor="role">역할 *</Label>
                 <Select
                   value={watchedRole}
-                  onValueChange={(value) => setValue('role', value as 'admin' | 'manager' | 'employee')}
+                  onValueChange={(value) => setValue('role', value as 'super_admin' | 'admin' | 'manager' | 'employee')}
                   disabled={isLoading}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="역할을 선택하세요" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="super_admin">최종관리자</SelectItem>
                     <SelectItem value="admin">관리자</SelectItem>
                     <SelectItem value="manager">매니저</SelectItem>
                     <SelectItem value="employee">직원</SelectItem>
@@ -255,10 +228,12 @@ export function InviteEmployeeForm({ hospitalId, departments, onClose, onSent }:
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-sm text-blue-800">
                   <strong>
-                    {watchedRole === 'admin' ? '관리자' : 
+                    {watchedRole === 'super_admin' ? '최종관리자' :
+                     watchedRole === 'admin' ? '관리자' :
                      watchedRole === 'manager' ? '매니저' : '직원'}
                   </strong>:{' '}
-                  {watchedRole === 'admin' ? '시스템 전체 관리 권한' :
+                  {watchedRole === 'super_admin' ? '시스템 최고 관리 권한 (모든 병원/MSO 관리)' :
+                   watchedRole === 'admin' ? '시스템 전체 관리 권한' :
                    watchedRole === 'manager' ? '부서 관리 및 업무 할당 권한' :
                    '기본 업무 수행 권한'}
                 </p>

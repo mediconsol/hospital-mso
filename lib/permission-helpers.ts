@@ -8,6 +8,7 @@ export interface UserPermissions {
   employee: Employee | null
   isAdmin: boolean
   isManager: boolean
+  isSuperAdmin: boolean
   hospitalId: string | null
   departmentId: string | null
 }
@@ -31,8 +32,9 @@ export async function getUserPermissions(): Promise<UserPermissions> {
 
     return {
       employee,
-      isAdmin: employee.role === 'admin',
-      isManager: employee.role === 'manager' || employee.role === 'admin',
+      isAdmin: employee.role === 'admin' || employee.role === 'super_admin',
+      isManager: employee.role === 'manager' || employee.role === 'admin' || employee.role === 'super_admin',
+      isSuperAdmin: employee.role === 'super_admin',
       hospitalId: employee.hospital_id,
       departmentId: employee.department_id
     }
@@ -42,6 +44,7 @@ export async function getUserPermissions(): Promise<UserPermissions> {
       employee: null,
       isAdmin: false,
       isManager: false,
+      isSuperAdmin: false,
       hospitalId: null,
       departmentId: null
     }

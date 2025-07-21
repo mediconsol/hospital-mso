@@ -28,25 +28,64 @@ interface EmployeeListProps {
   getStatusColor: (status: string) => string
   getStatusLabel: (status: string) => string
   isManager?: boolean
+  currentEmployee?: Employee | null
 }
 
-export function EmployeeList({ 
-  employees, 
-  departments, 
-  onEdit, 
-  onDelete, 
+export function EmployeeList({
+  employees,
+  departments,
+  onEdit,
+  onDelete,
   onStatusChange,
   getRoleColor,
   getRoleLabel,
   getStatusColor,
   getStatusLabel,
-  isManager = false
+  isManager = false,
+  currentEmployee = null
 }: EmployeeListProps) {
-  
+
   const getDepartmentName = (departmentId: string | null) => {
     if (!departmentId) return '부서 없음'
     const dept = departments.find(d => d.id === departmentId)
     return dept?.name || '알 수 없음'
+  }
+
+  // 직원 수정 권한 체크 함수
+  const canEditEmployee = (employee: Employee): boolean => {
+    if (!currentEmployee) return false
+
+    // 최고관리자와 관리자는 모든 직원 수정 가능
+    if (currentEmployee.role === 'super_admin' || currentEmployee.role === 'admin') {
+      return true
+    }
+
+    // 매니저와 직원은 본인 정보만 수정 가능
+    return currentEmployee.id === employee.id
+  }
+
+  // 직원 삭제 권한 체크 함수
+  const canDeleteEmployee = (employee: Employee): boolean => {
+    if (!currentEmployee) return false
+
+    // 최고관리자와 관리자만 삭제 가능 (본인 제외)
+    if (currentEmployee.role === 'super_admin' || currentEmployee.role === 'admin') {
+      return currentEmployee.id !== employee.id // 본인은 삭제 불가
+    }
+
+    return false
+  }
+
+  // 직원 상태 변경 권한 체크 함수
+  const canChangeStatus = (employee: Employee): boolean => {
+    if (!currentEmployee) return false
+
+    // 최고관리자와 관리자만 상태 변경 가능 (본인 제외)
+    if (currentEmployee.role === 'super_admin' || currentEmployee.role === 'admin') {
+      return currentEmployee.id !== employee.id // 본인 상태는 변경 불가
+    }
+
+    return false
   }
 
   const formatDate = (dateString: string | null) => {
@@ -136,7 +175,7 @@ export function EmployeeList({
                     </div>
                   </td>
                   <td className="py-3 px-4 text-right">
-                    {isManager && (
+                    {(canEditEmployee(employee) || canDeleteEmployee(employee) || canChangeStatus(employee)) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -144,24 +183,30 @@ export function EmployeeList({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => onEdit(employee)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            수정
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => onStatusChange(employee.id, 
-                              employee.status === 'active' ? 'inactive' : 'active')}
-                          >
-                            <User className="h-4 w-4 mr-2" />
-                            {employee.status === 'active' ? '비활성화' : '활성화'}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => onDelete(employee.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            삭제
-                          </DropdownMenuItem>
+                          {canEditEmployee(employee) && (
+                            <DropdownMenuItem onClick={() => onEdit(employee)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              수정
+                            </DropdownMenuItem>
+                          )}
+                          {canChangeStatus(employee) && (
+                            <DropdownMenuItem
+                              onClick={() => onStatusChange(employee.id,
+                                employee.status === 'active' ? 'inactive' : 'active')}
+                            >
+                              <User className="h-4 w-4 mr-2" />
+                              {employee.status === 'active' ? '비활성화' : '활성화'}
+                            </DropdownMenuItem>
+                          )}
+                          {canDeleteEmployee(employee) && (
+                            <DropdownMenuItem
+                              onClick={() => onDelete(employee.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              삭제
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
@@ -193,7 +238,7 @@ export function EmployeeList({
                   )}
                 </div>
               </div>
-              {isManager && (
+              {(canEditEmployee(employee) || canDeleteEmployee(employee) || canChangeStatus(employee)) && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm">
@@ -201,24 +246,30 @@ export function EmployeeList({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => onEdit(employee)}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      수정
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onStatusChange(employee.id, 
-                        employee.status === 'active' ? 'inactive' : 'active')}
-                    >
-                      <User className="h-4 w-4 mr-2" />
-                      {employee.status === 'active' ? '비활성화' : '활성화'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={() => onDelete(employee.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      삭제
-                    </DropdownMenuItem>
+                    {canEditEmployee(employee) && (
+                      <DropdownMenuItem onClick={() => onEdit(employee)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        수정
+                      </DropdownMenuItem>
+                    )}
+                    {canChangeStatus(employee) && (
+                      <DropdownMenuItem
+                        onClick={() => onStatusChange(employee.id,
+                          employee.status === 'active' ? 'inactive' : 'active')}
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        {employee.status === 'active' ? '비활성화' : '활성화'}
+                      </DropdownMenuItem>
+                    )}
+                    {canDeleteEmployee(employee) && (
+                      <DropdownMenuItem
+                        onClick={() => onDelete(employee.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        삭제
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}

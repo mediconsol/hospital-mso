@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { getCurrentEmployee } from '@/lib/auth-helpers'
+import { CreateChatRoomModal } from './create-chat-room-modal'
+import { ChatRoomSettingsModal } from './chat-room-settings-modal'
+
 import { 
   getChatRooms, 
   getChatMessages, 
@@ -18,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+
 import { 
   MessageSquare, 
   Plus, 
@@ -77,6 +81,7 @@ export function RealMessagesManager() {
   const [sending, setSending] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [showNewChatModal, setShowNewChatModal] = useState(false)
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const unsubscribeRef = useRef<(() => void) | null>(null)
 
@@ -120,7 +125,7 @@ export function RealMessagesManager() {
     try {
       const employee = await getCurrentEmployee()
       setCurrentEmployee(employee)
-      
+
       if (employee) {
         await loadChatRooms()
       }
@@ -135,7 +140,7 @@ export function RealMessagesManager() {
     try {
       const rooms = await getChatRooms()
       setChatRooms(rooms)
-      
+
       // 첫 번째 채팅방 자동 선택
       if (rooms.length > 0 && !currentRoom) {
         setCurrentRoom(rooms[0])
@@ -295,7 +300,7 @@ export function RealMessagesManager() {
                   <div
                     key={room.id}
                     onClick={() => setCurrentRoom(room)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    className={`group p-3 rounded-lg cursor-pointer transition-colors ${
                       currentRoom?.id === room.id
                         ? 'bg-blue-50 border border-blue-200'
                         : 'hover:bg-gray-50'
@@ -317,11 +322,26 @@ export function RealMessagesManager() {
                               {getRoomDisplayName(room)}
                             </h3>
                           </div>
-                          {room.last_message && (
-                            <span className="text-xs text-gray-500">
-                              {formatDate(room.last_message.created_at)}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {room.last_message && (
+                              <span className="text-xs text-gray-500">
+                                {formatDate(room.last_message.created_at)}
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-60 hover:opacity-100 group-hover:opacity-100"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCurrentRoom(room)
+                                setShowSettingsModal(true)
+                              }}
+                              title="채팅방 설정"
+                            >
+                              <Settings className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                         
                         {room.last_message && (
@@ -403,16 +423,16 @@ export function RealMessagesManager() {
                         )}
                         
                         <div className={`flex-1 ${isOwn ? 'text-right' : ''}`}>
-                          {showAvatar && !isOwn && (
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-medium">
-                                {message.sender?.name}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {formatTime(message.created_at)}
-                              </span>
-                            </div>
-                          )}
+                          {/* 모든 메시지에 작성자 이름과 시간 표시 */}
+                          <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
+                            <span className={`text-sm font-medium ${isOwn ? 'text-blue-600' : 'text-gray-700'}`}>
+                              {message.sender?.name || '알 수 없음'}
+                              {isOwn && ' (나)'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatTime(message.created_at)}
+                            </span>
+                          </div>
                           
                           <div
                             className={`inline-block p-3 rounded-lg max-w-[70%] ${
@@ -477,30 +497,30 @@ export function RealMessagesManager() {
         )}
       </Card>
 
-      {/* 새 채팅방 생성 모달 */}
-      {showNewChatModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>새 대화 시작</CardTitle>
-              <CardDescription>
-                개인 또는 그룹 대화를 시작하세요
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">
-                  새 채팅방 생성 기능은 곧 구현될 예정입니다
-                </p>
-                <Button onClick={() => setShowNewChatModal(false)}>
-                  확인
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+
+
+      {/* 채팅방 생성 모달 */}
+      <CreateChatRoomModal
+        isOpen={showNewChatModal}
+        onClose={() => setShowNewChatModal(false)}
+        onSuccess={() => {
+          loadChatRooms()
+          setShowNewChatModal(false)
+        }}
+        currentEmployee={currentEmployee}
+      />
+
+      {/* 채팅방 설정 모달 */}
+      <ChatRoomSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onUpdate={() => {
+          loadChatRooms()
+          setShowSettingsModal(false)
+        }}
+        room={currentRoom}
+        currentEmployee={currentEmployee}
+      />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+-- Migration: 20250720070003_add_auth_user_id_to_employee
 -- Add auth_user_id column to employee table to link with Supabase auth users
 ALTER TABLE employee ADD COLUMN auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 

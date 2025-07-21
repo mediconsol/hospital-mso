@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getUserPermissions, UserPermissions } from '@/lib/permission-helpers'
+import { useAccessibleOrganizations } from '@/hooks/use-accessible-organizations'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ReportsStats } from './reports-stats'
@@ -22,7 +24,6 @@ interface ReportsManagerProps {
 }
 
 export function ReportsManager({ userId }: ReportsManagerProps) {
-  const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [dateRange, setDateRange] = useState<string>('month')
   const [loading, setLoading] = useState(true)
@@ -34,6 +35,13 @@ export function ReportsManager({ userId }: ReportsManagerProps) {
     departmentId: null
   })
   const supabase = createClient()
+
+  // 다중 조직 접근 권한 훅 사용
+  const {
+    organizationOptions,
+    primaryOrganization,
+    hasAccessToOrganization
+  } = useAccessibleOrganizations()
 
   useEffect(() => {
     initializeUser()
@@ -98,13 +106,13 @@ export function ReportsManager({ userId }: ReportsManagerProps) {
     )
   }
 
-  if (organizations.length === 0) {
+  if (organizationOptions.length === 0) {
     return (
       <div className="text-center py-8">
         <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">먼저 조직을 등록해주세요.</p>
+        <p className="text-gray-500">접근 가능한 조직이 없습니다.</p>
         <p className="text-sm text-gray-400 mt-2">
-          조직 관리 페이지에서 병원 또는 MSO를 등록하세요.
+          관리자에게 조직 접근 권한을 요청하세요.
         </p>
       </div>
     )
@@ -129,9 +137,18 @@ export function ReportsManager({ userId }: ReportsManagerProps) {
                   <SelectValue placeholder="조직을 선택하세요" />
                 </SelectTrigger>
                 <SelectContent>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.id}>
-                      {org.name} ({org.type === 'hospital' ? '병원' : 'MSO'})
+                  {organizationOptions.map((org) => (
+                    <SelectItem key={org.value} value={org.value}>
+                      <div className="flex items-center space-x-2">
+                        <span>{org.label}</span>
+                        <Badge variant={org.isPrimary ? "default" : "secondary"} className="text-xs">
+                          {org.type === 'hospital' ? '병원' : 'MSO'}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {org.accessLevel === 'admin' ? '관리자' :
+                           org.accessLevel === 'write' ? '쓰기' : '읽기'}
+                        </Badge>
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>

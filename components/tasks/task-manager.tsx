@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getUserPermissions, applyTaskFilter, UserPermissions } from '@/lib/permission-helpers'
+import { useAccessibleOrganizations } from '@/hooks/use-accessible-organizations'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +30,6 @@ export function TaskManager() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
-  const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
   const [userPermissions, setUserPermissions] = useState<UserPermissions>({
     employee: null,
     isAdmin: false,
@@ -49,15 +49,25 @@ export function TaskManager() {
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
+  // 다중 조직 접근 권한 훅 사용
+  const {
+    organizationOptions,
+    primaryOrganization,
+    hasAccessToOrganization
+  } = useAccessibleOrganizations()
+
   useEffect(() => {
     initializeUser()
   }, [])
-  
+
+  // 접근 가능한 조직이 로드되면 첫 번째 조직 자동 선택
   useEffect(() => {
-    if (userPermissions.employee) {
-      fetchOrganizations()
+    if (organizationOptions.length > 0 && !selectedOrg) {
+      // 기본 조직이 있으면 선택, 없으면 첫 번째 조직 선택
+      const defaultOrg = primaryOrganization?.organization_id || organizationOptions[0].value
+      setSelectedOrg(defaultOrg)
     }
-  }, [userPermissions])
+  }, [organizationOptions, primaryOrganization, selectedOrg])
 
   useEffect(() => {
     if (selectedOrg) {
@@ -71,41 +81,14 @@ export function TaskManager() {
     try {
       const permissions = await getUserPermissions()
       setUserPermissions(permissions)
-      
-      if (permissions.employee) {
-        setSelectedOrg(permissions.employee.hospital_id)
-      }
     } catch (error) {
       console.error('Error initializing user:', error)
-    }
-  }
-
-  const fetchOrganizations = async () => {
-    try {
-      let query = supabase
-        .from('hospital_or_mso')
-        .select('*')
-      
-      // 관리자가 아니면 소속 조직만 조회
-      if (!userPermissions.isAdmin && userPermissions.hospitalId) {
-        query = query.eq('id', userPermissions.hospitalId)
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false })
-
-      if (error) throw error
-      setOrganizations(data || [])
-      
-      // 현재 직원의 병원이 없으면 첫 번째 조직 자동 선택
-      if (!selectedOrg && data && data.length > 0) {
-        setSelectedOrg(data[0].id)
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error)
     } finally {
       setLoading(false)
     }
   }
+
+
 
   const fetchDepartments = async (hospitalId: string) => {
     try {
@@ -278,13 +261,13 @@ export function TaskManager() {
     )
   }
 
-  if (organizations.length === 0) {
+  if (organizationOptions.length === 0) {
     return (
       <div className="text-center py-8">
         <ClipboardList className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">먼저 조직을 등록해주세요.</p>
+        <p className="text-gray-500">접근 가능한 조직이 없습니다.</p>
         <p className="text-sm text-gray-400 mt-2">
-          조직 관리 페이지에서 병원 또는 MSO를 등록하세요.
+          관리자에게 조직 접근 권한을 요청하세요.
         </p>
       </div>
     )
@@ -306,9 +289,18 @@ export function TaskManager() {
               <SelectValue placeholder="조직을 선택하세요" />
             </SelectTrigger>
             <SelectContent>
-              {organizations.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name} ({org.type === 'hospital' ? '병원' : 'MSO'})
+              {organizationOptions.map((org) => (
+                <SelectItem key={org.value} value={org.value}>
+                  <div className="flex items-center space-x-2">
+                    <span>{org.label}</span>
+                    <Badge variant={org.isPrimary ? "default" : "secondary"} className="text-xs">
+                      {org.type === 'hospital' ? '병원' : 'MSO'}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {org.accessLevel === 'admin' ? '관리자' :
+                       org.accessLevel === 'write' ? '쓰기' : '읽기'}
+                    </Badge>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>

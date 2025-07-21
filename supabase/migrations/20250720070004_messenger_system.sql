@@ -1,3 +1,4 @@
+-- Migration: 20250720070004_messenger_system
 -- 채팅방 테이블
 CREATE TABLE chat_room (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,

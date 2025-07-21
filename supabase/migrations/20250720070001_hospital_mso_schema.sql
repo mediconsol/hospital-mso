@@ -1,3 +1,4 @@
+-- Migration: 20250720070001_hospital_mso_schema
 -- Drop existing todos table if exists
 DROP TABLE IF EXISTS todos;
 

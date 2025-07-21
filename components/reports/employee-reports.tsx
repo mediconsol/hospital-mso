@@ -182,6 +182,7 @@ export function EmployeeReports({ organizationId, dateRange }: EmployeeReportsPr
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case 'super_admin': return '최종관리자'
       case 'admin': return '관리자'
       case 'manager': return '매니저'
       case 'employee': return '직원'

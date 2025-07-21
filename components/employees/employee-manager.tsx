@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { getUserPermissions, applyEmployeeFilter, UserPermissions } from '@/lib/permission-helpers'
+import { useAccessibleOrganizations } from '@/hooks/use-accessible-organizations'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -25,7 +27,6 @@ interface EmployeeManagerProps {
 export function EmployeeManager({ userId }: EmployeeManagerProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
-  const [organizations, setOrganizations] = useState<HospitalOrMSO[]>([])
   const [selectedOrg, setSelectedOrg] = useState<string>('')
   const [selectedDepartment, setSelectedDepartment] = useState<string>('')
   const [selectedRole, setSelectedRole] = useState<string>('')
@@ -43,6 +44,14 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
   })
   const supabase = createClient()
 
+  // 다중 조직 접근 권한 훅 사용
+  const {
+    organizationOptions,
+    primaryOrganization,
+    loading: orgsLoading,
+    hasAccessToOrganization
+  } = useAccessibleOrganizations()
+
   useEffect(() => {
     initializeData()
   }, [])
@@ -51,11 +60,21 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
     try {
       const permissions = await getUserPermissions()
       setUserPermissions(permissions)
-      await fetchOrganizations(permissions)
     } catch (error) {
       console.error('Error initializing employee manager:', error)
+    } finally {
+      setLoading(false)
     }
   }
+
+  // 접근 가능한 조직이 로드되면 첫 번째 조직 자동 선택
+  useEffect(() => {
+    if (organizationOptions.length > 0 && !selectedOrg) {
+      // 기본 조직이 있으면 선택, 없으면 첫 번째 조직 선택
+      const defaultOrg = primaryOrganization?.organization_id || organizationOptions[0].value
+      setSelectedOrg(defaultOrg)
+    }
+  }, [organizationOptions, primaryOrganization, selectedOrg])
 
   useEffect(() => {
     if (selectedOrg) {
@@ -63,34 +82,6 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
       fetchEmployees()
     }
   }, [selectedOrg])
-
-  const fetchOrganizations = async (permissions?: UserPermissions) => {
-    try {
-      const currentPermissions = permissions || userPermissions
-      let query = supabase
-        .from('hospital_or_mso')
-        .select('*')
-      
-      // 관리자가 아니면 소속 조직만 조회
-      if (!currentPermissions.isAdmin && currentPermissions.hospitalId) {
-        query = query.eq('id', currentPermissions.hospitalId)
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false })
-
-      if (error) throw error
-      setOrganizations(data || [])
-      
-      // 첫 번째 조직 자동 선택
-      if (data && data.length > 0) {
-        setSelectedOrg(data[0].id)
-      }
-    } catch (error) {
-      console.error('Error fetching organizations:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const fetchDepartments = async (hospitalId: string) => {
     try {
@@ -196,6 +187,7 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
 
   const getRoleColor = (role: string) => {
     switch (role) {
+      case 'super_admin': return 'bg-red-100 text-red-800'
       case 'admin': return 'bg-purple-100 text-purple-800'
       case 'manager': return 'bg-blue-100 text-blue-800'
       case 'employee': return 'bg-gray-100 text-gray-800'
@@ -205,6 +197,7 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case 'super_admin': return '최종관리자'
       case 'admin': return '관리자'
       case 'manager': return '매니저'
       case 'employee': return '직원'
@@ -229,13 +222,13 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
     )
   }
 
-  if (organizations.length === 0) {
+  if (organizationOptions.length === 0) {
     return (
       <div className="text-center py-8">
         <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <p className="text-gray-500">먼저 조직을 등록해주세요.</p>
+        <p className="text-gray-500">접근 가능한 조직이 없습니다.</p>
         <p className="text-sm text-gray-400 mt-2">
-          조직 관리 페이지에서 병원 또는 MSO를 등록하세요.
+          관리자에게 조직 접근 권한을 요청하세요.
         </p>
       </div>
     )
@@ -257,9 +250,18 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
               <SelectValue placeholder="조직을 선택하세요" />
             </SelectTrigger>
             <SelectContent>
-              {organizations.map((org) => (
-                <SelectItem key={org.id} value={org.id}>
-                  {org.name} ({org.type === 'hospital' ? '병원' : 'MSO'})
+              {organizationOptions.map((org) => (
+                <SelectItem key={org.value} value={org.value}>
+                  <div className="flex items-center space-x-2">
+                    <span>{org.label}</span>
+                    <Badge variant={org.isPrimary ? "default" : "secondary"} className="text-xs">
+                      {org.type === 'hospital' ? '병원' : 'MSO'}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {org.accessLevel === 'admin' ? '관리자' :
+                       org.accessLevel === 'write' ? '쓰기' : '읽기'}
+                    </Badge>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -331,6 +333,7 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">전체 역할</SelectItem>
+                    <SelectItem value="super_admin">최종관리자</SelectItem>
                     <SelectItem value="admin">관리자</SelectItem>
                     <SelectItem value="manager">매니저</SelectItem>
                     <SelectItem value="employee">직원</SelectItem>
@@ -350,6 +353,7 @@ export function EmployeeManager({ userId }: EmployeeManagerProps) {
                 getStatusColor={getStatusColor}
                 getStatusLabel={getStatusLabel}
                 isManager={userPermissions.isManager}
+                currentEmployee={userPermissions.employee}
               />
             </CardContent>
           </Card>
