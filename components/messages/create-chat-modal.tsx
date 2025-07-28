@@ -30,6 +30,7 @@ import {
   MessageCircle
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Database } from '@/lib/database.types'
 
 const chatRoomSchema = z.object({
   name: z.string().min(1, '채팅방 이름은 필수입니다').max(50, '채팅방 이름은 50자 이하여야 합니다'),
@@ -44,17 +45,17 @@ interface Employee {
   id: string
   name: string
   email: string
-  position?: string
-  department_id?: string
+  position: string | null
+  department_id: string | null
   department?: {
     name: string
-  }
+  } | null
 }
 
 interface Department {
   id: string
   name: string
-  description?: string
+  description: string | null
 }
 
 interface CreateChatModalProps {
